@@ -6,6 +6,7 @@ const CashierApp = () => {
     {
       Name: "Cajero",
       Transaction: Math.floor(Math.random() * 5) + 2,
+      Priority: 0,
     },
   ]);
   const timePerTransaction = 1000;
@@ -132,6 +133,14 @@ const CashierApp = () => {
   }, [users]);
 
   function handleClient(usersCopy) {
+    usersCopy.sort((a, b) =>  {
+      if (a.Priority === b.Priority) {
+        return a.Transaction - b.Transaction;
+      } else {
+        return a.Priority - b.Priority;
+      }
+    });
+    
     if (clientHandled) {
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
         if (clientHandled.Name.includes("'")) {
@@ -140,6 +149,7 @@ const CashierApp = () => {
           );
           setBloqueados(newBloqueados);
         }
+
         usersCopy[0] = {
           ...usersCopy[0],
           Transaction: Math.floor(Math.random() * 5) + 2,
@@ -184,14 +194,16 @@ const CashierApp = () => {
           usersCopy.push({
             Name: exClientHandled.Name + "'",
             Transaction: exClientHandled.Transaction - users[0].Transaction,
-            TimeOfArrival: time,
+            TimeOfArrival: exClientHandled.TimeOfArrival,
+            Priority: exClientHandled.Priority,
           });
         } else {
           setClientHandled({
             Name: exClientHandled.Name + "'",
             Transaction: exClientHandled.Transaction - users[0].Transaction,
-            TimeOfArrival: time,
+            TimeOfArrival: exClientHandled.TimeOfArrival,
             HandleStartTime: time,
+            Priority: exClientHandled.Priority,
           });
         }
       }
@@ -222,12 +234,14 @@ const CashierApp = () => {
         Transaction: Math.floor(Math.random() * 9) + 1,
         TimeOfArrival: time,
         HandleStartTime: time,
+        Priority: Math.floor(Math.random() * 3) + 1,
       });
     } else {
       newUsers.push({
         Name: "C" + numToAssign,
         Transaction: Math.floor(Math.random() * 10) + 1,
         TimeOfArrival: time,
+        Priority: Math.floor(Math.random() * 3) + 1,
       });
     }
     setNextNum(numToAssign + 1);
@@ -253,6 +267,7 @@ const CashierApp = () => {
         <td>{user.Name}</td>
         <td>{user.TimeOfArrival}</td>
         <td>{rafaga}</td>
+        <td>{user.Priority}</td>
         <td>{user.HandleStartTime}</td>
         <td>{user.FinishTime}</td>
         <td>{tRetorno}</td>
@@ -265,6 +280,7 @@ const CashierApp = () => {
       <td>{clientHandled.Name}</td>
       <td>{clientHandled.TimeOfArrival}</td>
       <td>{clientHandled.Transaction}</td>
+      <td>{clientHandled.Priority}</td>
       <td>{clientHandled.HandleStartTime}</td>
       <td></td>
       <td></td>
@@ -281,6 +297,7 @@ const CashierApp = () => {
         <td>{user.Name}</td>
         <td>{user.TimeOfArrival}</td>
         <td>{user.Transaction}</td>
+        <td>{user.Priority}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -340,7 +357,7 @@ const CashierApp = () => {
           handledUsers={handledUsers}
         />
         <p className='bloqueados'>
-          Bloqueados: {bloqueados.map((bloq) => bloq + ", ")}
+          Cola Bloqueados: {bloqueados.map((bloq) => bloq + ", ")}
         </p>
         <hr />
         <div>
@@ -350,6 +367,7 @@ const CashierApp = () => {
                 <td>Proceso</td>
                 <td>T. LLegada</td>
                 <td>Rafaga</td>
+                <td>Prioridad</td>
                 <td>T. Comienzo</td>
                 <td>T. Final</td>
                 <td>T. Retorno</td>
