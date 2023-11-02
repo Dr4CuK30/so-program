@@ -150,3 +150,10 @@ th {
   font-size: 20px;
   font-weight: bolder;
 }
+.changeQuantum{
+  margin-left: 40%;
+}
+
+.changeQuantum input {
+  width: 30px;
+}

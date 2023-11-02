@@ -6,10 +6,8 @@ const CashierApp = () => {
     {
       Name: "Cajero",
       Transaction: Math.floor(Math.random() * 5) + 2,
-      Priority: 0,
     },
   ]);
-  const timePerTransaction = 1000;
   const [isQueuing, setQueuing] = useState(true);
   const [numToAssign, setNextNum] = useState(1);
   const [time, setTime] = useState(0);
@@ -17,6 +15,8 @@ const CashierApp = () => {
   const [handledUsers, setHandledUsers] = useState([]);
   const [clientHandled, setClientHandled] = useState(null);
   const [bloqueados, setBloqueados] = useState([]);
+  const [quantum, setQuantum] = useState(3);
+  const [quantumInput, setQuantumInput] = useState("3");
   useEffect(() => {
     const interval = setInterval(() => {
       let usersCopy = [...users];
@@ -133,14 +133,6 @@ const CashierApp = () => {
   }, [users]);
 
   function handleClient(usersCopy) {
-    usersCopy.sort((a, b) =>  {
-      if (a.Priority === b.Priority) {
-        return a.Transaction - b.Transaction;
-      } else {
-        return a.Priority - b.Priority;
-      }
-    });
-    
     if (clientHandled) {
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
         if (clientHandled.Name.includes("'")) {
@@ -195,7 +187,6 @@ const CashierApp = () => {
             Name: exClientHandled.Name + "'",
             Transaction: exClientHandled.Transaction - users[0].Transaction,
             TimeOfArrival: exClientHandled.TimeOfArrival,
-            Priority: exClientHandled.Priority,
           });
         } else {
           setClientHandled({
@@ -203,7 +194,37 @@ const CashierApp = () => {
             Transaction: exClientHandled.Transaction - users[0].Transaction,
             TimeOfArrival: exClientHandled.TimeOfArrival,
             HandleStartTime: time,
-            Priority: exClientHandled.Priority,
+          });
+        }
+      } else if (time - clientHandled.HandleStartTime === quantum) {
+        usersCopy[0] = {
+          ...usersCopy[0],
+          Transaction: Math.floor(Math.random() * 5) + 5,
+        };
+        const exClientHandled = { ...clientHandled };
+        setHandledUsers([
+          ...handledUsers,
+          { ...clientHandled, FinishTime: time },
+        ]);
+        setClientHandled(null);
+        if (users.length > 1) {
+          const newHandledClient = usersCopy[1];
+          usersCopy.splice(1, 1);
+          setClientHandled({
+            ...newHandledClient,
+            HandleStartTime: time,
+          });
+          usersCopy.push({
+            Name: exClientHandled.Name + "*",
+            Transaction: exClientHandled.Transaction - quantum,
+            TimeOfArrival: exClientHandled.TimeOfArrival,
+          });
+        } else {
+          setClientHandled({
+            Name: exClientHandled.Name + "*",
+            Transaction: exClientHandled.Transaction - quantum,
+            TimeOfArrival: exClientHandled.TimeOfArrival,
+            HandleStartTime: time,
           });
         }
       }
@@ -234,14 +255,12 @@ const CashierApp = () => {
         Transaction: Math.floor(Math.random() * 9) + 1,
         TimeOfArrival: time,
         HandleStartTime: time,
-        Priority: Math.floor(Math.random() * 3) + 1,
       });
     } else {
       newUsers.push({
         Name: "C" + numToAssign,
         Transaction: Math.floor(Math.random() * 10) + 1,
         TimeOfArrival: time,
-        Priority: Math.floor(Math.random() * 3) + 1,
       });
     }
     setNextNum(numToAssign + 1);
@@ -267,7 +286,6 @@ const CashierApp = () => {
         <td>{user.Name}</td>
         <td>{user.TimeOfArrival}</td>
         <td>{rafaga}</td>
-        <td>{user.Priority}</td>
         <td>{user.HandleStartTime}</td>
         <td>{user.FinishTime}</td>
         <td>{tRetorno}</td>
@@ -280,7 +298,6 @@ const CashierApp = () => {
       <td>{clientHandled.Name}</td>
       <td>{clientHandled.TimeOfArrival}</td>
       <td>{clientHandled.Transaction}</td>
-      <td>{clientHandled.Priority}</td>
       <td>{clientHandled.HandleStartTime}</td>
       <td></td>
       <td></td>
@@ -297,7 +314,6 @@ const CashierApp = () => {
         <td>{user.Name}</td>
         <td>{user.TimeOfArrival}</td>
         <td>{user.Transaction}</td>
-        <td>{user.Priority}</td>
         <td></td>
         <td></td>
         <td></td>
@@ -305,7 +321,14 @@ const CashierApp = () => {
       </tr>
     );
   });
+  function changeQuantum() {
+    setQuantum(Number(quantumInput));
+  }
 
+  function changeInputValue(e) {
+    setQuantumInput(e.target.value);
+  }
+  const semaphoreMessage = clientHandled ? "Ocupado" : "Disponible";
   return (
     <div className='container'>
       <div className='data-container'>
@@ -344,11 +367,15 @@ const CashierApp = () => {
         <div className='top-bar'>
           <button onClick={changeIsQueueing}>{queueingMessage}</button>
           <button onClick={changeIsHandling}>{handlingMessage}</button>
+          <button
+            style={{
+              backgroundColor: clientHandled ? "red" : "green",
+            }}
+          >
+            {semaphoreMessage}
+          </button>
           {/* <input value={transactions} onChange={changeTransactions} /> */}
-          <p>
-            Tiempo de atención por transacción: {timePerTransaction / 1000}
-            seg
-          </p>
+          <p>Quantum: {quantum}</p>
         </div>
         <Chart
           usersData={users}
@@ -359,6 +386,14 @@ const CashierApp = () => {
         <p className='bloqueados'>
           Cola Bloqueados: {bloqueados.map((bloq) => bloq + ", ")}
         </p>
+        <div className='changeQuantum'>
+          <input
+            type='number'
+            value={quantumInput}
+            onChange={changeInputValue}
+          ></input>
+          <button onClick={changeQuantum}>Cambiar quantum</button>
+        </div>
         <hr />
         <div>
           <table>
@@ -367,7 +402,6 @@ const CashierApp = () => {
                 <td>Proceso</td>
                 <td>T. LLegada</td>
                 <td>Rafaga</td>
-                <td>Prioridad</td>
                 <td>T. Comienzo</td>
                 <td>T. Final</td>
                 <td>T. Retorno</td>
