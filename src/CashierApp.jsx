@@ -17,7 +17,7 @@ const CashierApp = () => {
   const [handledUsers, setHandledUsers] = useState([]);
   const [clientHandled, setClientHandled] = useState(null);
   const [bloqueados, setBloqueados] = useState([]);
-  const [timeBlocked, setTimeBlocked] = useState(3);
+  const [timeBlocked, setTimeBlocked] = useState(2);
 
   const [principalQueue, setPrincipalQueue] = useState({
     users: users,
@@ -145,6 +145,9 @@ const CashierApp = () => {
     if (clientHandled) {
 
       if (blockedQueue.length > 0) {
+        console.log(blockedQueue);
+        const bloqueados = blockedQueue;
+        console.log(bloqueados);
         if (blockedQueue[0].TimeEndBlocked === time) {
           const newClient = blockedQueueCopy[0];
           usersCopy.push({
@@ -165,29 +168,32 @@ const CashierApp = () => {
         }
       });
 
-      if (clientHandled.Transaction - (time - clientHandled.HandleStartTime) > usersCopy[1].Transaction) {
-        const newClient = clientHandled;
-        //blockedQueue.splice(0, 1);
-        setHandledUsers([
-          ...handledUsers,
-          { ...clientHandled, FinishTime: time },
-        ]);
+      console.log('usersCopy.length' + usersCopy.length);
+      if(usersCopy.length > 1 ){
+        if (clientHandled.Transaction - (time - clientHandled.HandleStartTime) > usersCopy[1].Transaction) {
 
-        usersCopy.push({
-          Name: newClient.Name + '*',
-          Transaction: newClient.Transaction - (time - newClient.HandleStartTime),
-          TimeOfArrival: newClient.TimeOfArrival,
-          Priority: 1,
-        });
-        const newHandledClient = usersCopy[1];
-        usersCopy.splice(1, 1);
-        setClientHandled({
-          ...newHandledClient,
-          HandleStartTime: time,
-        });
+          const newClient = clientHandled;
+          setHandledUsers([
+            ...handledUsers,
+            { ...clientHandled, FinishTime: time },
+          ]);
+          usersCopy.push({
+            Name: newClient.Name + '*',
+            Transaction: newClient.Transaction - (time - newClient.HandleStartTime),
+            TimeOfArrival: newClient.TimeOfArrival,
+            Priority: 1,
+          });
+          const newHandledClient = usersCopy[1];
+          usersCopy.splice(1, 1);
+          setClientHandled({
+            ...newHandledClient,
+            HandleStartTime: time,
+          });
+        }
       }
-
+      
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
+        clientHandled.Name.replaceAll("*",""); 
         if (clientHandled.Name.includes("'")) {
           const newBloqueados = [...bloqueados].filter(
             (bloq) => !bloq.includes(clientHandled.Name.replaceAll("'", ""))
@@ -250,12 +256,15 @@ const CashierApp = () => {
           });
 
         } else {
-          setClientHandled({
-            Name: exClientHandled.Name + "'",
+          blockedQueueCopy.push({
+            Name: exClientHandled.Name,
             Transaction: exClientHandled.Transaction - timeBloq,
             TimeOfArrival: exClientHandled.TimeOfArrival,
-            HandleStartTime: time,
+            TimeStartBlocked: time,
+            TimeEndBlocked: time + timeBlocked,
+            Priority: 1,
           });
+
         }
       }
     } else if (users.length > 1) {
