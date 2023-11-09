@@ -6,6 +6,7 @@ const CashierApp = () => {
     {
       Name: "Cajero",
       Transaction: Math.floor(Math.random() * 5) + 2,
+      Priority: 0,
     },
   ]);
   const [blockedQueue, setBlockedQueue] = useState([]);
@@ -16,9 +17,7 @@ const CashierApp = () => {
   const [handledUsers, setHandledUsers] = useState([]);
   const [clientHandled, setClientHandled] = useState(null);
   const [bloqueados, setBloqueados] = useState([]);
-  const [quantum, setQuantum] = useState(4);
   const [timeBlocked, setTimeBlocked] = useState(3);
-  const [quantumInput, setQuantumInput] = useState("4");
 
   const [principalQueue, setPrincipalQueue] = useState({
     users: users,
@@ -152,9 +151,40 @@ const CashierApp = () => {
             Name: newClient.Name + "'",
             Transaction: newClient.Transaction,
             TimeOfArrival: newClient.TimeOfArrival,
+            Priority: 1,
           });
           blockedQueue.splice(0, 1);
         }
+      }
+
+      usersCopy.sort((a, b) => {
+        if (a.Priority === b.Priority) {
+          return a.Transaction - b.Transaction;
+        } else {
+          return a.Priority - b.Priority;
+        }
+      });
+
+      if (clientHandled.Transaction - (time - clientHandled.HandleStartTime) > usersCopy[1].Transaction) {
+        const newClient = clientHandled;
+        //blockedQueue.splice(0, 1);
+        setHandledUsers([
+          ...handledUsers,
+          { ...clientHandled, FinishTime: time },
+        ]);
+
+        usersCopy.push({
+          Name: newClient.Name + '*',
+          Transaction: newClient.Transaction - (time - newClient.HandleStartTime),
+          TimeOfArrival: newClient.TimeOfArrival,
+          Priority: 1,
+        });
+        const newHandledClient = usersCopy[1];
+        usersCopy.splice(1, 1);
+        setClientHandled({
+          ...newHandledClient,
+          HandleStartTime: time,
+        });
       }
 
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
@@ -216,47 +246,13 @@ const CashierApp = () => {
             TimeOfArrival: exClientHandled.TimeOfArrival,
             TimeStartBlocked: time,
             TimeEndBlocked: time + timeBlocked,
+            Priority: 1,
           });
 
         } else {
           setClientHandled({
             Name: exClientHandled.Name + "'",
             Transaction: exClientHandled.Transaction - timeBloq,
-            TimeOfArrival: exClientHandled.TimeOfArrival,
-            HandleStartTime: time,
-          });
-        }
-
-      } else if (time - clientHandled.HandleStartTime === quantum) {
-
-        console.log('acabo el quantum' + clientHandled.Name);
-
-        usersCopy[0] = {
-          ...usersCopy[0],
-          Transaction: Math.floor(Math.random() * 5) + 5,
-        };
-        const exClientHandled = { ...clientHandled };
-        setHandledUsers([
-          ...handledUsers,
-          { ...clientHandled, FinishTime: time },
-        ]);
-        setClientHandled(null);
-        if (users.length > 1) {
-          const newHandledClient = usersCopy[1];
-          usersCopy.splice(1, 1);
-          setClientHandled({
-            ...newHandledClient,
-            HandleStartTime: time,
-          });
-          usersCopy.push({
-            Name: exClientHandled.Name + "*",
-            Transaction: exClientHandled.Transaction - quantum,
-            TimeOfArrival: exClientHandled.TimeOfArrival,
-          });
-        } else {
-          setClientHandled({
-            Name: exClientHandled.Name + "*",
-            Transaction: exClientHandled.Transaction - quantum,
             TimeOfArrival: exClientHandled.TimeOfArrival,
             HandleStartTime: time,
           });
@@ -295,6 +291,7 @@ const CashierApp = () => {
         Name: "C" + numToAssign,
         Transaction: Math.floor(Math.random() * 10) + 1,
         TimeOfArrival: time,
+        Priority: 1,
       });
     }
     setNextNum(numToAssign + 1);
@@ -409,7 +406,6 @@ const CashierApp = () => {
             {semaphoreMessage}
           </button>
           {/* <input value={transactions} onChange={changeTransactions} /> */}
-          <p>Quantum: {quantum}</p>
         </div>
         <Chart
           usersData={users}
@@ -420,15 +416,6 @@ const CashierApp = () => {
         <p className='bloqueados'>
           Cola Bloqueados: {bloqueados.map((bloq) => bloq + ", ")}
         </p>
-        <div className='changeQuantum'>
-          <input
-            type='number'
-            value={quantumInput}
-            onChange={changeInputValue}
-          ></input>
-          <button onClick={changeQuantum}>Cambiar quantum</button>
-        </div>
-        <hr />
         <div>
           <table>
             <thead>
