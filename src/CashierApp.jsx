@@ -17,7 +17,7 @@ const CashierApp = () => {
   const [clientHandled, setClientHandled] = useState(null);
   const [bloqueados, setBloqueados] = useState([]);
   const [quantum, setQuantum] = useState(4);
-  const [timeBlocked, setTimeBlocked] = useState(3);
+  const [timeBlocked, setTimeBlocked] = useState(2);
   const [quantumInput, setQuantumInput] = useState("4");
 
   const [principalQueue, setPrincipalQueue] = useState({
@@ -158,6 +158,7 @@ const CashierApp = () => {
       }
 
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
+        clientHandled.Name.replaceAll("*", "");
         if (clientHandled.Name.includes("'")) {
           const newBloqueados = [...bloqueados].filter(
             (bloq) => !bloq.includes(clientHandled.Name.replaceAll("'", ""))
