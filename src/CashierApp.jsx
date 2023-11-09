@@ -8,6 +8,7 @@ const CashierApp = () => {
       Transaction: Math.floor(Math.random() * 5) + 2,
     },
   ]);
+  const [blockedQueue, setBlockedQueue] = useState([]);
   const [isQueuing, setQueuing] = useState(true);
   const [numToAssign, setNextNum] = useState(1);
   const [time, setTime] = useState(0);
@@ -15,24 +16,33 @@ const CashierApp = () => {
   const [handledUsers, setHandledUsers] = useState([]);
   const [clientHandled, setClientHandled] = useState(null);
   const [bloqueados, setBloqueados] = useState([]);
-  const [quantum, setQuantum] = useState(3);
-  const [quantumInput, setQuantumInput] = useState("3");
+  const [quantum, setQuantum] = useState(4);
+  const [timeBlocked, setTimeBlocked] = useState(3);
+  const [quantumInput, setQuantumInput] = useState("4");
+
+  const [principalQueue, setPrincipalQueue] = useState({
+    users: users,
+    blockedQueue: blockedQueue,
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
-      let usersCopy = [...users];
+      let principalQueueCopy = { ...principalQueue };
+
       if (isQueuing) {
-        usersCopy = queueClient(usersCopy);
+        principalQueueCopy.users = queueClient(principalQueueCopy.users);
       }
       if (isHandling) {
         setTime(time + 1);
-        usersCopy = handleClient(usersCopy);
+        principalQueueCopy.users = handleClient(principalQueueCopy.users, principalQueueCopy.blockedQueue);
       }
-      setUsers(usersCopy);
+      setPrincipalQueue(principalQueueCopy);
+      setUsers(principalQueue.users);
     }, 1000);
     return () => {
       clearInterval(interval);
     };
-  }, [isQueuing, users, isHandling, time]);
+  }, [isQueuing, principalQueue, isHandling, time]);
 
   const canvasRefQueue = useRef(null);
   const canvasRefCurrent = useRef(null);
@@ -132,8 +142,21 @@ const CashierApp = () => {
     dibujarBolitas();
   }, [users]);
 
-  function handleClient(usersCopy) {
+  function handleClient(usersCopy, blockedQueueCopy) {
     if (clientHandled) {
+
+      if (blockedQueue.length > 0) {
+        if (blockedQueue[0].TimeEndBlocked === time) {
+          const newClient = blockedQueueCopy[0];
+          usersCopy.push({
+            Name: newClient.Name + "'",
+            Transaction: newClient.Transaction,
+            TimeOfArrival: newClient.TimeOfArrival,
+          });
+          blockedQueue.splice(0, 1);
+        }
+      }
+
       if (time - clientHandled.HandleStartTime === clientHandled.Transaction) {
         if (clientHandled.Name.includes("'")) {
           const newBloqueados = [...bloqueados].filter(
@@ -163,6 +186,8 @@ const CashierApp = () => {
         time - clientHandled.HandleStartTime ===
         users[0].Transaction
       ) {
+
+        const timeBloq = usersCopy[0].Transaction;
         const newBloqueados = [...bloqueados];
         newBloqueados.push(clientHandled.Name);
         setBloqueados(newBloqueados);
@@ -170,6 +195,7 @@ const CashierApp = () => {
           ...usersCopy[0],
           Transaction: Math.floor(Math.random() * 5) + 2,
         };
+
         const exClientHandled = { ...clientHandled };
         setHandledUsers([
           ...handledUsers,
@@ -183,20 +209,28 @@ const CashierApp = () => {
             ...newHandledClient,
             HandleStartTime: time,
           });
-          usersCopy.push({
-            Name: exClientHandled.Name + "'",
-            Transaction: exClientHandled.Transaction - users[0].Transaction,
+
+          blockedQueueCopy.push({
+            Name: exClientHandled.Name,
+            Transaction: exClientHandled.Transaction - timeBloq,
             TimeOfArrival: exClientHandled.TimeOfArrival,
+            TimeStartBlocked: time,
+            TimeEndBlocked: time + timeBlocked,
           });
+
         } else {
           setClientHandled({
             Name: exClientHandled.Name + "'",
-            Transaction: exClientHandled.Transaction - users[0].Transaction,
+            Transaction: exClientHandled.Transaction - timeBloq,
             TimeOfArrival: exClientHandled.TimeOfArrival,
             HandleStartTime: time,
           });
         }
+
       } else if (time - clientHandled.HandleStartTime === quantum) {
+
+        console.log('acabo el quantum' + clientHandled.Name);
+
         usersCopy[0] = {
           ...usersCopy[0],
           Transaction: Math.floor(Math.random() * 5) + 5,
